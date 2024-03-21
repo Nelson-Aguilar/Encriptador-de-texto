@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Agrego una etiqueta meta para controlar el zoom de la pantalla -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Agrego un título más descriptivo al documento HTML -->
+    <title>Encriptador de textos AES-256-bits-CBC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <header class="logo">
+            <h1>
+                <img src="imagenes/logo.svg" alt="logo de alura" />
+            </h1>
+        </header>
+        <section class="message">
+            <div class="textarea-container">
+                <textarea class="input-message" id="texto" placeholder="Ingrese el texto aquí"></textarea>
+            </div>
+
+            <div class="buttons-container">
+                <div class="warning" id="divinfo">
+                    <img src="imagenes/info.svg" alt="icono de atencion" />
+                    <p id="info" class="warn-msg">Sólo letras minúsculas y sin tilde</p>
+                </div>
+                <div class="buttons">
+                    <button id="botonContraseña" onclick="cambiarContraseña()" class="encrypt button" style="display: none;">Deshabilitar contraseña</button>
+                    <input type="password" id="contraseña" placeholder="Contraseña" class="decrypt button light-blue" style="display: none;">
+                </div>
+                <div class="buttons">
+                    <button id="encriptarLlaves" onclick="procesar('encriptar')" class="encrypt button">Encriptar</button>
+                    <button id="desencriptarLlaves" onclick="procesar('desencriptar')" class="decrypt button light-blue">Desencriptar</button>
+                    <button id="encriptar" class="encrypt button" style="display: none;">Encriptar</button>
+                    <button id="desencriptar" class="decrypt button light-blue" style="display: none;">Desencriptar</button>
+                </div>
+                <div class="buttons">
+                    <button id="limpiar" onclick="onclickLimpiar()" class="encrypt button">Limpiar texto y portapapeles</button>
+                    <p onclick="irAesLaves()" id="irAES" class="decrypt button light-blue">Encriptador AES-256-bits-CBC</p>
+                </div>
+                <div class="buttons">
+                    <p id="msg-Secreto" class="decrypt button light-blue">Prueba desencriptando el mensaje oculto aquí</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="output" class="encrypted-container">
+            <div>
+                <textarea readonly rows="10" class="crypted-message" id="resultado" placeholder="Ningún mensaje fue encontrado"></textarea>
+                <button onclick="onclickCopiar()" class="decrypt button light-blue" id="copy" style="display: none;">Copiar</button>
+            </div>
+        </section>
+    </main>
+    <script>
+        //OPCION 4
+
+        //Matriz de llaves
+        var llaves = [
+            ['e', 'enter'],
+            ['i', 'imes'],
+            ['a', 'ai'],
+            ['o', 'ober'],
+            ['u', 'ufat'],
+        ];
+        //Selector de columna de "llaves"
+        var columna = [0,1];
+
+        //Funcion encriptar
+        function encriptarLlaves(mensaje){  
+
+        //Procesando el mensaje a encriptar
+        for (let i = 0; i < llaves.length; i++) {
+            mensaje = mensaje.replaceAll(llaves[i][columna[0]], llaves[i][columna[1]]);
+        }
+        //Retornando el mensaje encriptado
+        return mensaje;
+        }
+
+        //Funcion desencriptar
+        function desencriptarLlaves(mensaje){
+
+        //Para que la desencripcion sea correcta debe revertirse el orden de
+        //los elementos internos de cada matriz: "llaves" y "columna"
+        llaves.reverse(); columna.reverse();
+
+        //Procesando el mensaje a desencriptar
+        for (let i = 0; i < llaves.length; i++) {
+        //En la siguiente linea de codigo, en las matrices "llaves" y "columna",
+        //el orden interno de sus elementos se ha revertido, por ejemplo "columna"
+        //en su elemento [0], tiene un valor de "1" y en su elemnto [1], tiene
+        //un valor de "0". En "llaves" su elemento [0] es ['u', 'ufat']
+        //y su elemento [4] es ['e', 'enter']
+        //Todo lo anterio es necesario para una correcta desencriptacion
+            mensaje = mensaje.replaceAll(llaves[i][columna[0]], llaves[i][columna[1]]);
+        }
+
+        //Los elementos internos de cada matriz, deben volver a su orden original
+        //para que nuevamente se pueda encriptar o desencriptar, de manera correcta
+        llaves.reverse(); columna.reverse();
+
+        //Retornando el mensaje desencriptado
+        return mensaje;
+        }
+
+        // Función que valida que el texto introducido sea válido
+        function validar(texto) {
+            // Creo una expresión regular para buscar caracteres no permitidos
+            var regex = /[A-ZÁÉÍÓÚáéíóú]/g;
+            // Verifico si el texto contiene caracteres no permitidos
+            if (regex.test(texto)) {
+                // Muestro un mensaje de error
+                //alert("El texto contiene caracteres no permitidos. Solo se aceptan letras minúsculas sin tilde.");
+                info("El texto contiene caracteres no permitidos. Solo se aceptan letras minúsculas sin tilde.");
+                setTimeout(()=>{infoOriginal("Sólo letras minúsculas y sin tilde")},3500);
+                // Devuelvo falso
+                return false;
+            } else {
+                // Devuelvo verdadero
+                return true;
+            }
+        }
+
+        // Función que procesa el texto según la opción elegida
+        function procesar(opcion) {
+            var btncopiar = document.getElementById("copy")
+            // Obtengo el elemento que contiene el texto original
+            var textoIngresado = document.getElementById("texto");
+            // Obtengo el elemento que contiene el texto encriptado
+            var textoProcesado = document.getElementById("resultado");
+            // Obtengo el valor del texto original
+            var texto = textoIngresado.value;
+            // Verifico que el texto no esté vacío
+            if (texto != "") {
+                // Verifico que el texto sea válido
+                if (validar(texto)) {
+                    // Verifico la opción elegida
+                    if (opcion == "encriptar") {
+                        // Encripto el texto y lo asigno al texto encriptado
+                        textoProcesado.value = encriptarLlaves(texto);
+                        textoProcesado.style.backgroundImage="none";
+                        btncopiar.style.display='block';
+                        
+                    } else if (opcion == "desencriptar") {
+                        // Desencripto el texto y lo asigno al texto encriptado
+                        textoProcesado.value = desencriptarLlaves(texto);
+                        textoProcesado.style.backgroundImage="none";
+                        btncopiar.style.display='block';
+                    }
+                    }
+                    // Limpio el texto original
+                    limpiar(textoIngresado);
+                } else {
+                // Muestro un mensaje de error
+                info("El texto está vacío. Por favor, introduzca algún texto.");
+                setTimeout(()=>{infoOriginal("Sólo letras minúsculas y sin tilde")},3500);
+            }
+        }
+
+
+
+        // Seleccionamos los elementos del DOM
+        var texto = document.getElementById("texto");
+        var resultado = document.getElementById("resultado");
+        var contraseña = document.getElementById("contraseña");
+        var botonEncriptar = document.getElementById("encriptar");
+        var botonDesencriptar = document.getElementById("desencriptar");
+        var botonCopiar = document.getElementById("copy");
+        var botonLimpiar = document.getElementById("limpiar");
+        var botonContraseña = document.getElementById("botonContraseña");
+        var btnMsgSecreto = document.getElementById("msg-Secreto");
+        var msgSecreto ="fenterlimescimesdaidenters poberr enternfrenterntair enterstenter dentersaifimesober y haibenterrlober cobernclufatimesdober cobern enterximestober!";
+        var msgSecretoAes="BaTc8N2CQuHnNnZGBij/IXqwnFn6yvybOKDEm8jcRFWl4mFTp6hVlR6R0dHRYd2G2cF82bCPQ+A0nNogPY6VWgPiwKpGe1bE+3aIggepP6la1YhB88trDpoFryuCA7ZqopKdPeA17uzeUx+ktd3nQg==";
+        var infoSecreto = document.getElementById("divinfo");
+        var irAes = document.getElementById("irAES");
+        var botonEncriptarLlaves = document.getElementById("encriptarLlaves");
+        var botonDesencriptarLlaves = document.getElementById("desencriptarLlaves");
+
+
+        // Añadimos los eventos a los botones
+        botonEncriptar.addEventListener("click", encriptar);
+        botonDesencriptar.addEventListener("click", desencriptar);
+
+        //Restablecer mensaje informativo al borrar contenido del input de texto
+        texto.addEventListener("input", function() {
+        if (texto.value === "") {
+            if (irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+            } else {
+            infoOriginal("Sólo letras minúsculas y sin tilde");
+            }
+            }
+        });
+
+         //Limpiar "resultado" si se hace click en input de texto
+         texto.addEventListener("click", function() {
+            if(texto.value==msgSecretoAes){
+                btncopiar.style.display='none';
+                info("Ingresa la siguiente contraseña: aes256cbc");
+                infoSecreto.style.fontSize = "1.5em";
+                setTimeout(()=>{infoSecreto.style.fontSize = "1.0em";},1000);
+                }else{
+                    limpiar(document.getElementById('resultado'));
+                    document.getElementById("resultado").style.backgroundImage=muneco;
+                    btncopiar.style.display='none';
+                    if (irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+                        infoOriginal("Sólo letras minúsculas y sin tilde");
+                    
+                    } else {
+                        infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+                        
+                        }
+                }
+        });
+
+        //Pegar mensaje secreto en input de texto, si se hace click sobre el boton de probar mensaje secreto
+        btnMsgSecreto.addEventListener("click", function() {
+                if (irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+                texto.value=msgSecreto;
+                limpiar(document.getElementById('resultado'));
+                document.getElementById("resultado").style.backgroundImage=muneco;
+                btncopiar.style.display='none';
+                } else {
+                    texto.value="BaTc8N2CQuHnNnZGBij/IXqwnFn6yvybOKDEm8jcRFWl4mFTp6hVlR6R0dHRYd2G2cF82bCPQ+A0nNogPY6VWgPiwKpGe1bE+3aIggepP6la1YhB88trDpoFryuCA7ZqopKdPeA17uzeUx+ktd3nQg==";
+                    limpiar(document.getElementById('resultado'));
+                    document.getElementById("resultado").style.backgroundImage=muneco;
+                    btncopiar.style.display='none';
+                    //info("Sólo letras minúsculas y sin tilde");
+                    info("Ingresa la siguiente contraseña: aes256cbc");
+                    }
+            });
+
+
+        var muneco="url('imagenes/search-img.svg')";
+        var btncopiar = document.getElementById("copy");
+        //Funcion del boton Copiar
+        function onclickCopiar(){
+            copiar(document.getElementById('resultado'));
+            limpiar(document.getElementById('resultado'));
+            limpiar(document.getElementById('texto'));
+            limpiar(document.getElementById('contraseña'));
+            document.getElementById("resultado").style.backgroundImage=muneco;
+            btncopiar.style.display='none'; 
+        }
+
+        //Funcion del boton Limpiar
+        function onclickLimpiar(){
+            limpiar(document.getElementById('texto')); 
+            limpiar(document.getElementById('resultado'));
+            limpiarPortapapeles();
+            limpiar(document.getElementById('contraseña'));
+            document.getElementById("resultado").style.backgroundImage=muneco;
+            btncopiar.style.display='none';
+            if (irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+            } else {
+            infoOriginal("Sólo letras minúsculas y sin tilde");
+            }
+        }
+        /////////////////////////////////////////////////////////////////
+        
+        // Función para cambiar el estado del input de contraseña y el texto del botón
+        function cambiarContraseña() {
+        if (botonContraseña.innerHTML == "Deshabilitar contraseña") {
+            limpiar(document.getElementById('contraseña'));
+            botonContraseña.innerHTML = "Habilitar contraseña";
+            contraseña.style.display='none';
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+        } else {
+            botonContraseña.innerHTML = "Deshabilitar contraseña";
+            contraseña.style.display='block';            
+            }
+        }
+    
+        // Función para cambiar el estado del input de contraseña y el texto del botón
+        function irAesLaves() {
+        // Comprobamos si el input de contraseña está habilitado o no
+        if (irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+            if(botonContraseña.innerHTML == "Habilitar contraseña"){
+                botonContraseña.innerHTML = "Deshabilitar contraseña";
+                contraseña.style.display='block';
+                }
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+            botonEncriptar.style.display="block";
+            botonDesencriptar.style.display="block";
+            botonEncriptarLlaves.style.display="none";
+            botonDesencriptarLlaves.style.display="none";
+            contraseña.style.display="block";
+            botonContraseña.style.display="block";
+            irAes.innerHTML="Encriptador basado en llaves";
+            var msgSecreto = "BaTc8N2CQuHnNnZGBij/IXqwnFn6yvybOKDEm8jcRFWl4mFTp6hVlR6R0dHRYd2G2cF82bCPQ+A0nNogPY6VWgPiwKpGe1bE+3aIggepP6la1YhB88trDpoFryuCA7ZqopKdPeA17uzeUx+ktd3nQg==";
+            limpiar(document.getElementById('texto')); 
+            limpiar(document.getElementById('resultado'));
+            limpiarPortapapeles();
+            limpiar(document.getElementById('contraseña'));
+            document.getElementById("resultado").style.backgroundImage=muneco;
+            btncopiar.style.display='none';
+        } else {
+          
+            infoOriginal("Sólo letras minúsculas y sin tilde");
+            contraseña.style.display="none";
+            botonContraseña.style.display="none";
+            botonEncriptar.style.display="none"
+            botonDesencriptar.style.display="none";
+            botonEncriptarLlaves.style.display="block";
+            botonDesencriptarLlaves.style.display="block";
+            irAes.innerHTML="Encriptador AES-256-bits-CBC";
+            var msgSecreto = "fenterlimescimesdaidenters poberr enternfrenterntair enterstenter dentersaifimesober y haibenterrlober cobernclufatimesdober cobern enterximestober!";
+            limpiar(document.getElementById('texto')); 
+            limpiar(document.getElementById('resultado'));
+            limpiarPortapapeles();
+            limpiar(document.getElementById('contraseña'));
+            document.getElementById("resultado").style.backgroundImage=muneco;
+            btncopiar.style.display='none';
+        }
+        }
+        ////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////
+
+        // Definimos el tamaño de la clave y de la sal en bytes ("sal", es salida)
+        var tamañoClave = 32; // 256 bits
+        var tamañoSal = 16; // 128 bits
+        
+        // Función para encriptar el texto
+        function encriptar() {
+        if(texto.value==""){info("El texto está vacío, por favor ingrese el texto a encriptar");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500);
+        limpiar(document.getElementById("contraseña"));}else{
+            if ((contraseña.disabled == false) && (contraseña.value=="")){
+            info("Por favor ingrese una contraseña para encriptar el texto");}else{
+        // Obtenemos el texto del input
+        var textoPlano = texto.value;
+        // Obtenemos la contraseña del input
+        var password = contraseña.value;
+       
+        // Generamos una sal aleatoria ("sal", es salida)
+        var sal = CryptoJS.lib.WordArray.random(tamañoSal);
+        // Generamos una clave a partir de la contraseña y la sal usando PBKDF2
+        var clave = CryptoJS.PBKDF2(password, sal, {keySize: tamañoClave/4});
+        // Definimos un vector de inicialización (IV) para el modo CBC
+        var iv = CryptoJS.lib.WordArray.random(tamañoSal);
+        // Encriptamos el texto usando la clave, el IV y el algoritmo AES-256-CBC
+        var textoCifrado = CryptoJS.AES.encrypt(textoPlano, clave, {iv: iv});
+        // Concatenamos la sal y el IV al texto cifrado
+        var resultadoCifrado = sal.concat(iv).concat(textoCifrado.ciphertext);
+        // Convertimos el resultado a una cadena en base64
+        var resultadoBase64 = CryptoJS.enc.Base64.stringify(resultadoCifrado);
+        // Mostramos el resultado en el otro input
+        resultado.value = resultadoBase64;
+        if(resultado.value != ""){
+            limpiar(document.getElementById("texto"));
+            limpiar(document.getElementById("contraseña"));
+            resultado.style.backgroundImage="none";
+            botonCopiar.style.display='block';
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+        }
+        }}}
+
+        // Función para desencriptar el texto
+        function desencriptar() {
+        if(texto.value==""){info("El texto está vacío, por favor ingrese el texto a desencriptar");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500);
+        limpiar(document.getElementById("contraseña"));}else{
+        // Obtenemos el texto del input
+        var textoCifrado = texto.value;
+        ///////////////////////////////////////////////////////////////
+        // Probamos si el texto es portador o no de una contraseña
+        //Primero probamos si el texto puede desencriptarse sin ingresar una contraseña 
+        ///////////////////////////////////////////////////////////////////
+        var password = "";
+        // Convertimos el texto cifrado de base64 a una cadena de bytes
+        var textoBytes = CryptoJS.enc.Base64.parse(textoCifrado);
+        // Extraemos la sal del texto cifrado (los primeros 16 bytes)
+        var sal = CryptoJS.lib.WordArray.create(textoBytes.words.slice(0, tamañoSal/4));
+        // Extraemos el IV del texto cifrado (los siguientes 16 bytes)
+        var iv = CryptoJS.lib.WordArray.create(textoBytes.words.slice(tamañoSal/4, tamañoSal/2));
+        // Extraemos el texto cifrado propiamente dicho (el resto de bytes)
+        var textoCifradoBytes = CryptoJS.lib.WordArray.create(textoBytes.words.slice(tamañoSal/2));
+        // Generamos una clave a partir de la contraseña y la sal usando PBKDF2
+        var clave = CryptoJS.PBKDF2(password, sal, {keySize: tamañoClave/4});
+        // Desencriptamos el texto usando la clave, el IV y el algoritmo AES-256-CBC
+        var textoPlano = CryptoJS.AES.decrypt({ciphertext: textoCifradoBytes}, clave, {iv: iv});
+        // Convertimos el texto plano a una cadena UTF-8
+        var resultadoPlano = textoPlano.toString(CryptoJS.enc.Utf8);
+        // Mostramos el resultado en el otro input
+        resultado.value = resultadoPlano;
+        
+        if((textoCifradoBytes=="")||(textoBytes=="")||(sal=="")||(iv=="")){info("El texto no está encriptado");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500); return;}
+       
+        if((contraseña.value=="") && (resultado.value!="")){info("Texto desencriptado con éxito. No posee contraseña.");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500);
+        limpiar(document.getElementById("texto"));
+        limpiar(document.getElementById("contraseña"));
+        resultado.style.backgroundImage="none";
+        botonCopiar.style.display='block';return;}
+        
+        if((contraseña.value!="") && (resultado.value!="")){info("Texto desencriptado con éxito. No requiere el ingreso de una contraseña");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500);
+        limpiar(document.getElementById("texto"));
+        limpiar(document.getElementById("contraseña"));
+        resultado.style.backgroundImage="none";
+        botonCopiar.style.display='block';return;}
+        
+        if(resultado.value!=""){
+            limpiar(document.getElementById("texto"));
+            limpiar(document.getElementById("contraseña"));
+            resultado.style.backgroundImage="none";
+            botonCopiar.style.display='block';
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+        } else{ 
+        ///////////////////////////////////////////////////////
+        //Si el texto no pudo ser desencriptado sin el ingreso de una contraseña, 
+        //entonces se solicita el ingreso de una contraseña, con las condiciones necesarias 
+        //para que pueda ser desencriptado ingresando una contraseña
+        /////////////////////////////////////////////////////////////
+        var password = contraseña.value;
+        // Convertimos el texto cifrado de base64 a una cadena de bytes
+        var textoBytes = CryptoJS.enc.Base64.parse(textoCifrado);
+        // Extraemos la sal del texto cifrado (los primeros 16 bytes)
+        var sal = CryptoJS.lib.WordArray.create(textoBytes.words.slice(0, tamañoSal/4));
+        // Extraemos el IV del texto cifrado (los siguientes 16 bytes)
+        var iv = CryptoJS.lib.WordArray.create(textoBytes.words.slice(tamañoSal/4, tamañoSal/2));
+        // Extraemos el texto cifrado propiamente dicho (el resto de bytes)
+        var textoCifradoBytes = CryptoJS.lib.WordArray.create(textoBytes.words.slice(tamañoSal/2));
+        // Generamos una clave a partir de la contraseña y la sal usando PBKDF2
+        var clave = CryptoJS.PBKDF2(password, sal, {keySize: tamañoClave/4});
+        // Desencriptamos el texto usando la clave, el IV y el algoritmo AES-256-CBC
+        var textoPlano = CryptoJS.AES.decrypt({ciphertext: textoCifradoBytes}, clave, {iv: iv});
+        // Convertimos el texto plano a una cadena UTF-8
+        var resultadoPlano = textoPlano.toString(CryptoJS.enc.Utf8);
+        // Mostramos el resultado en el otro input
+        resultado.value = resultadoPlano;
+
+        if((contraseña.value=="") && (resultado.value=="")&&(texto.value==msgSecretoAes)){
+            info("Ingresa la siguiente contraseña: aes256cbc");
+            infoSecreto.style.fontSize = "1.5em";
+            setTimeout(()=>{infoSecreto.style.fontSize = "1.0em";},1000);}else{
+                if((contraseña.value=="") && (resultado.value=="")){
+                info("Por favor ingrese una contraseña para desencriptar el texto");}}
+        
+        if((contraseña.value!="") && (resultado.value=="")){info("Contraseña incorrecta. Verifique si el mensaje no ha sido alterado");
+        setTimeout(()=>{infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");},3500);}
+        
+        if(resultado.value!=""){
+            limpiar(document.getElementById("texto"));
+            limpiar(document.getElementById("contraseña"));
+            resultado.style.backgroundImage="none";
+            botonCopiar.style.display='block';
+            infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar");
+        }  
+        }
+        }
+        }
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+                function SelecElement(selec) {
+            return document.querySelector(selec);
+        }
+
+        function info(text) {
+            const pElement = SelecElement('.warning p');
+            pElement.textContent = text;
+            pElement.style.color = 'red'; // Cambia el color del texto a rojo
+        }
+
+        function infoOriginal(text) {
+            const pElement = SelecElement('.warning p');
+            pElement.textContent = text;
+            pElement.style.color = 'var(--dark-blue-500)'; // Cambia el color del texto a negro
+        }
+
+
+        // Función que copia el texto de un elemento al portapapeles
+        function copiar(elemento) { 
+        // Selecciona el texto del elemento
+        elemento.select();
+        // Copia el texto al portapapeles
+        document.execCommand("copy");
+        /*if(elemento.value==""){alert("El texto está vacío. Ingrese un texto para procesarlo")}else{
+        alert("Texto copiado al portapapeles");}*/
+        info("Texto copiado al portapapeles");
+        setTimeout(()=>{if(irAes.innerHTML=="Encriptador AES-256-bits-CBC") {
+            infoOriginal("Sólo letras minúsculas y sin tilde");
+            } else {
+                infoOriginal("Ingresa el mensaje que desees encriptar o desencriptar")
+            }},3500);
+        }
+
+        // Función que limpia el texto de un elemento
+        function limpiar(elemento) {
+            // Borro el texto del elemento
+            elemento.value = "";
+        }
+
+        // Función que limpia el portapapeles
+        function limpiarPortapapeles() {
+            // Limpio el portapapeles
+            navigator.clipboard.writeText("");
+        }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 1
+/*
+// Matriz de llaves
+var llaves = [
+    ['e', 'enter'],
+    ['i', 'imes'],
+    ['a', 'ai'],
+    ['o', 'ober'],
+    ['u', 'ufat'],
+];
+// Función para encriptar
+function encriptar(inputText) {
+    var resultado = procesarTexto(inputText, 'encrypt');
+    return resultado;
+}
+// Función para desencriptar
+function desencriptar(inputText) {
+    var resultado = procesarTexto(inputText, 'decrypt');
+    return resultado;
+}
+// Función para procesar el texto
+function procesarTexto(mensaje, opcion) {
+    //Selector de columna de "llaves"
+    var columna = [0, 1];
+    if (opcion === 'decrypt') {
+        columna.reverse();
+        llaves.reverse();
+    }
+    for (let i = 0; i < llaves.length; i++) {
+        mensaje = mensaje.replaceAll(llaves[i][columna[0]], llaves[i][columna[1]]);
+    }
+    if(opcion === 'decrypt'){llaves.reverse(); columna.reverse();}
+    return mensaje;
+}
+*/
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 2
+/*
+// Definir la matriz de llaves de encriptación
+
+var llaves = [
+    ["e", "enter"],
+    ["i", "imes"],
+    ["a", "ai"],
+    ["o", "ober"],
+    ["u", "ufat"],
+  ];
+  
+// Definir una función que encripta un texto dado
+function encriptar(texto) {
+// Crear una variable para almacenar el texto encriptado
+var encriptado = "";
+// Recorrer cada letra del texto
+for (var i = 0; i < texto.length; i++) {
+    // Obtener la letra actual
+    var letra = texto[i];
+    // Buscar si la letra tiene una llave de encriptación
+    var encontrada = false;
+    for (var j = 0; j < llaves.length; j++) {
+    // Comparar la letra con la primera columna de la llave
+    if (letra == llaves[j][0]) {
+        // Si coincide, reemplazar la letra por la segunda columna de la llave
+        encriptado += llaves[j][1];
+        // Marcar que se encontró la llave
+        encontrada = true;
+        // Salir del bucle interno
+        break;
+    }
+    }
+    // Si no se encontró la llave, mantener la letra original
+    if (!encontrada) {
+    encriptado += letra;
+    }
+}
+// Devolver el texto encriptado
+return encriptado;
+}
+
+// Definir una función que desencripta un texto dado
+function desencriptar(texto) {
+// Crear una variable para almacenar el texto desencriptado
+var desencriptado = "";
+// Recorrer cada letra del texto
+for (var i = 0; i < texto.length; i++) {
+    // Obtener la letra actual
+    var letra = texto[i];
+    // Buscar si la letra forma parte de una llave de encriptación
+    var encontrada = false;
+    for (var j = 0; j < llaves.length; j++) {
+    // Comparar la letra con la primera letra de la segunda columna de la llave
+    if (letra == llaves[j][1][0]) {
+        // Si coincide, verificar si el resto de la segunda columna de la llave también coincide
+        var coincidencia = true;
+        for (var k = 1; k < llaves[j][1].length; k++) {
+        // Si alguna letra no coincide, romper el bucle interno
+        if (texto[i + k] != llaves[j][1][k]) {
+            coincidencia = false;
+            break;
+        }
+        }
+        // Si todas las letras coinciden, reemplazar la segunda columna de la llave por la primera columna
+        if (coincidencia) {
+        desencriptado += llaves[j][0];
+        // Marcar que se encontró la llave
+        encontrada = true;
+        // Avanzar el índice del texto según la longitud de la llave
+        i += llaves[j][1].length - 1;
+        // Salir del bucle interno
+        break;
+        }
+    }
+    }
+    // Si no se encontró la llave, mantener la letra original
+    if (!encontrada) {
+    desencriptado += letra;
+    }
+}
+// Devolver el texto desencriptado
+return desencriptado;
+}  
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 3
+/*
+//Funciones encriptar/desencriptar
+
+var llaves=[
+    ["e","enter"],
+    ["i","imes"],
+    ["a","ai"],
+    ["o","ober"],
+    ["u","ufat"]
+];
+function encriptar(mensaje){
+    for(let i=0;i<llaves.length;i++){
+    mensaje=mensaje.replaceAll(llaves[i][0],llaves[i][1]);
+    }
+    return mensaje;
+}
+//NO USAR llaves = llaves.reverse(); USAR LO SIGUIENTE:
+var llavesReverse=[
+    ["u","ufat"],
+    ["o","ober"],
+    ["a","ai"],
+    ["i","imes"],
+    ["e","enter"] 
+];
+function desencriptar(mensaje){
+    for(let i=0;i<llavesReverse.length;i++){
+    mensaje=mensaje.replaceAll(llavesReverse[i][1],llavesReverse[i][0]);
+    }
+    return mensaje;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+//OPCION 4
+
+//Matriz de llaves
+var llaves = [
+    ['e', 'enter'],
+    ['i', 'imes'],
+    ['a', 'ai'],
+    ['o', 'ober'],
+    ['u', 'ufat'],
+];
+//Selector de columna de "llaves"
+var columna = [0,1];
+
+//Funcion encriptar
+function encriptarLlaves(mensaje){  
+
+//Procesando el mensaje a encriptar
+for (let i = 0; i < llaves.length; i++) {
+    mensaje = mensaje.replaceAll(llaves[i][columna[0]], llaves[i][columna[1]]);
+}
+//Retornando el mensaje encriptado
+return mensaje;
+}
+
+//Funcion desencriptar
+function desencriptarLlaves(mensaje){
+
+//Para que la desencripcion sea correcta debe revertirse el orden de
+//los elementos internos de cada matriz: "llaves" y "columna"
+llaves.reverse(); columna.reverse();
+
+//Procesando el mensaje a desencriptar
+for (let i = 0; i < llaves.length; i++) {
+//En la siguiente linea de codigo, en las matrices "llaves" y "columna",
+//el orden interno de sus elementos se ha revertido, por ejemplo "columna"
+//en su elemento [0], tiene un valor de "1" y en su elemnto [1], tiene
+//un valor de "0". En "llaves" su elemento [0] es ['u', 'ufat']
+//y su elemento [4] es ['e', 'enter']
+//Todo lo anterio es necesario para una correcta desencriptacion
+    mensaje = mensaje.replaceAll(llaves[i][columna[0]], llaves[i][columna[1]]);
+}
+
+//Los elementos internos de cada matriz, deben volver a su orden original
+//para que nuevamente se pueda encriptar o desencriptar, de manera correcta
+llaves.reverse(); columna.reverse();
+
+//Retornando el mensaje desencriptado
+return mensaje;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 5
+
+// Función que encripta un texto usando las llaves de encriptación
+/*
+function encriptar(texto) {
+// Reemplaza cada letra por su correspondiente llave
+texto = texto.replace(/e/g, "enter");
+texto = texto.replace(/i/g, "imes");
+texto = texto.replace(/a/g, "ai");
+texto = texto.replace(/o/g, "ober");
+texto = texto.replace(/u/g, "ufat");
+// Devuelve el texto encriptado
+return texto;
+}
+
+// Función que desencripta un texto usando las llaves de encriptación
+function desencriptar(texto) {
+// Reemplaza cada llave por su correspondiente letra
+texto = texto.replace(/ufat/g, "u");
+texto = texto.replace(/ober/g, "o");
+texto = texto.replace(/ai/g, "a");
+texto = texto.replace(/imes/g, "i");
+texto = texto.replace(/enter/g, "e");
+// Devuelve el texto desencriptado
+return texto;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 6
+
+// Objeto que guarda las llaves de encriptación
+/*
+var llaves = {
+"e": "enter",
+"i": "imes",
+"a": "ai",
+"o": "ober",
+"u": "ufat"
+};
+
+// Función que encripta el texto
+function encriptar(texto) {
+// Expresión regular que busca las letras que tienen llave
+var regex = /[eiaou]/g;
+// Reemplaza las letras por los valores de las llaves usando una función de callback
+var encriptado = texto.replace(regex, function(match) {
+return llaves[match];
+});
+return encriptado;
+}
+
+// Función que desencripta el texto
+function desencriptar(texto) {
+// Expresión regular que busca los valores de las llaves
+var regex = /enter|imes|ai|ober|ufat/g;
+// Reemplaza los valores de las llaves por las letras usando una función de callback
+var desencriptado = texto.replace(regex, function(match) {
+// Busca la llave que tiene el valor coincidente
+for (var llave in llaves) {
+    if (llaves[llave] == match) {
+        return llave;
+    }
+}
+});
+return desencriptado;
+}*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//OPCION 7
+/*
+//Objeto que guarda las llaves de encriptación
+var llaves = {
+"e": "enter",
+"i": "imes",
+"a": "ai",
+"o": "ober",
+"u": "ufat"
+};
+
+// Función que encripta el texto
+function encriptar(texto) {
+var encriptado = "";
+for (var i = 0; i < texto.length; i++) {
+var letra = texto[i];
+if (llaves[letra]) {
+    // Si la letra tiene una llave, la reemplaza por el valor
+    encriptado += llaves[letra];
+} else {
+    // Si no, la deja igual
+    encriptado += letra;
+}
+}
+return encriptado;
+}
+
+//Función que desencripta el texto
+function desencriptar(texto) {
+var desencriptado = "";
+var i = 0;
+while (i < texto.length) {
+var letra = texto[i];
+var encontrado = false;
+// Busca si la letra es el inicio de una llave
+for (var llave in llaves) {
+    var valor = llaves[llave];
+    var longitud = valor.length;
+    // Compara el texto con el valor de la llave
+    if (texto.substring(i, i + longitud) == valor) {
+        // Si coincide, lo reemplaza por la llave
+        desencriptado += llave;
+        // Avanza el índice según la longitud del valor
+        i += longitud;
+        encontrado = true;
+        break;
+    }
+}
+if (!encontrado) {
+    // Si no encuentra ninguna llave, deja la letra igual
+    desencriptado += letra;
+    i++;
+}
+}
+return desencriptado;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*/ Función que copia el texto de un elemento al portapapeles
+function copiar(elemento) {
+// Selecciona el texto del elemento
+elemento.select();
+// Copia el texto al portapapeles
+navigator.clipboard.writeText(elemento.value);
+}*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+const SelecElement = (selec) => {
+    return document.querySelector(selec);
+  }
+
+  const setWarn = (text) => {
+    SelecElement('.warning p').textContent = `${text}`;
+  }*/
+
+
+    </script>
+    <script src="crypto-js.js"></script>
+</body>
+</html>
